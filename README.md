@@ -1,87 +1,36 @@
-# 🤖 AI Trading Journal
+# Trading Journal Tracker
 
-A portfolio-ready full-stack trading journal that combines trade tracking, performance analytics, behavioral insights and optional LLM-powered reviews.
-
-## Stack
-- **Frontend:** responsive HTML/CSS/JavaScript dashboard
-- **Backend:** Node.js + Express REST API
-- **Database:** SQLite with `better-sqlite3`, WAL mode
-- **AI:** OpenAI Responses API with a deterministic fallback when no API key is configured
-- **Deployment:** Docker + Render blueprint
+A full-stack, multi-portfolio trading journal focused on **daily profit/loss tracking** and performance review.
 
 ## Features
-- Create, list and delete trades
-- Long/Short P&L and R-multiple calculations
-- Win rate, profit factor, average win/loss and max drawdown
-- Equity curve visualization
-- Setup and emotion aggregation
-- JSON export
-- AI journal review focused on performance, behavior and risk discipline
-- API health endpoint
-- Secrets kept in environment variables
-- Persistent SQLite disk configuration for Render
-- Responsive mobile-first interface
+- Multiple trading portfolios/accounts
+- Initial capital per portfolio
+- One daily P&L entry per date (editing the same date updates it)
+- Automatic current balance and cumulative return
+- Dashboard metrics: initial capital, current balance, total P&L, total return, winning/losing days
+- Daily performance calendar
+- Weekly performance calendar with each day's P&L
+- Monthly performance summaries
+- Responsive frontend for desktop and mobile
+- SQLite persistence through an Express REST API
+- JSON-friendly API design
+- No AI, image upload, broker integration, or API key required
+
+## Stack
+- Frontend: HTML, CSS, vanilla JavaScript
+- Backend: Node.js + Express
+- Database: SQLite via better-sqlite3
+- Deployment: Docker / Render configuration
 
 ## Run locally
-
-Requirements: Node.js 20+
-
 ```bash
 npm install
-cp .env.example .env
 npm start
 ```
+Then open `http://localhost:3000`.
 
-Open `http://localhost:3000`.
+## Data model
+`portfolios` stores account name, initial capital and currency. `daily_entries` stores one P&L result per portfolio/date plus optional notes. The server calculates balance and return from the initial capital and accumulated daily results.
 
-To enable LLM reviews, put your OpenAI API key in `.env`:
-
-```env
-OPENAI_API_KEY=your_key_here
-OPENAI_MODEL=gpt-5-mini
-```
-
-If the key is absent, `/api/ai/review` uses a local deterministic coach instead of failing.
-
-## API
-
-- `GET /api/health`
-- `GET /api/trades`
-- `POST /api/trades`
-- `DELETE /api/trades/:id`
-- `DELETE /api/trades`
-- `GET /api/analytics`
-- `POST /api/ai/review`
-
-## Deployment
-
-The included `Dockerfile` can run the app on any Docker-compatible host. `render.yaml` provides a Render blueprint with a persistent disk mounted at `/data` so the SQLite database survives deploys/restarts.
-
-Set `OPENAI_API_KEY` as a secret in the deployment provider. Never commit `.env` or API keys.
-
-## Project structure
-
-```text
-.
-├── index.html
-├── server.js
-├── package.json
-├── .env.example
-├── .gitignore
-├── Dockerfile
-├── render.yaml
-└── README.md
-```
-
-## Product roadmap
-
-- Authentication and multi-user workspaces
-- Cloud PostgreSQL/Supabase option
-- Broker CSV/API imports
-- Trade screenshots and chart annotations
-- Advanced charts and calendar heatmaps
-- AI weekly/monthly reports
-- Strategy backtesting module
-- Automated risk rules and alerts
-
-> **Disclaimer:** This project provides journaling and educational analytics. It does not provide financial advice, guaranteed returns, or automated trading signals.
+## Disclaimer
+This is a record-keeping and analytics application. It does not provide financial advice or trading recommendations.
