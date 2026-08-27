@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ai-trading-journal
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5-mini
+      - key: DB_PATH
+        value: /data/trading-journal.db
+    disk:
+      name: trading-data
+      mountPath: /data
+      sizeGB: 1
