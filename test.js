@@ -1,0 +1,11 @@
+const {spawn}=require('node:child_process');
+const fs=require('node:fs');
+const path=require('node:path');
+const db=path.join(process.cwd(),'.smoke-test.db');
+try{fs.rmSync(db,{force:true});fs.rmSync(db+'-shm',{force:true});fs.rmSync(db+'-wal',{force:true});}catch{}
+const port=3217;
+const child=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(port),DB_PATH:db},stdio:['ignore','pipe','pipe']});
+const base=`http://127.0.0.1:${port}`;
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function req(path,opts){const r=await fetch(base+path,{headers:{'content-type':'application/json'},...opts});const text=await r.text();let body;try{body=JSON.parse(text)}catch{body=text}if(!r.ok)throw new Error(`${opts?.method||'GET'} ${path}: ${r.status} ${text}`);return body}
+(async()=>{try{await wait(1000);const h=await req('/api/health');if(!h.ok)throw Error('health failed');const p=await req('/api/portfolios',{method:'POST',body:JSON.stringify({name:'Smoke Test',initialCapital:100000,currency:'INR'})});if(!p.id)throw Error('portfolio create failed');await req(`/api/portfolios/${p.id}/entries`,{method:'POST',body:JSON.stringify({date:'2026-08-24',amount:2000})});await req(`/api/portfolios/${p.id}/entries`,{method:'POST',body:JSON.stringify({date:'2026-08-25',amount:-500})});await req(`/api/portfolios/${p.id}/entries`,{method:'POST',body:JSON.stringify({date:'2026-08-25',amount:-700,notes:'updated'})});const s=await req(`/api/portfolios/${p.id}/summary`);if(s.balance!==101300)throw Error(`balance expected 101300, got ${s.balance}`);if(s.netPnl!==1300)throw Error('net P&L incorrect');if(s.winningDays!==1||s.losingDays!==1)throw Error('win/loss counts incorrect');if(s.entries.length!==2)throw Error('upsert created duplicate daily entry');console.log('Smoke tests passed.');process.exitCode=0}catch(e){console.error(e);process.exitCode=1}finally{child.kill('SIGTERM');setTimeout(()=>{for(const f of [db,db+'-shm',db+'-wal'])try{fs.rmSync(f,{force:true})}catch{}},200)}})();
