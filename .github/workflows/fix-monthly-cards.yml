@@ -1,0 +1,29 @@
+name: Fix monthly report
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update monthly report
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          start=s.index('function renderMonthly(){')
+          end=s.index('function renderAll(){', start)
+          new="""function renderMonthly(){let groups={};data.entries.forEach(e=>{let k=e.date.slice(0,7);(groups[k]??=[]).push(e)});let year=new Date().getFullYear();let months=Array.from({length:12},(_,i)=>{let k=`${year}-${String(i+1).padStart(2,'0')}`;return [k,groups[k]||[]]});$('monthly').innerHTML=nav('Monthly performance',`<div class=\\\"month-grid\\\">${months.map(([k,es])=>{let n=es.reduce((a,e)=>a+e.amount,0),w=es.filter(e=>e.amount>0).length,l=es.filter(e=>e.amount<0).length,label=new Date(k+'-01T00:00:00').toLocaleString('en',{month:'long',year:'numeric'});return `<div class=\\\"card month-card\\\"><div class=\\\"section-head\\\"><b>${label}</b><span class=\\\"pill\\\">${es.length} days</span></div><div class=\\\"metric\\\"><strong class=\\\"${n>0?'green':n<0?'red':''}\\\">${es.length?money(n):'—'}</strong><small>${es.length?(n>=0?'Profit':'Loss')+' • '+w+'W / '+l+'L':'No data yet'}</small></div></div>`}).join('')}</div><p class=\\\"muted\\\">All 12 months are shown. Months without entries remain available for tracking.</p>`)}"""
+          p.write_text(s[:start]+new+s[end:])
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git diff --cached --quiet || (git commit -m "fix: render all 12 months" && git push)
